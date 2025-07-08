@@ -6,7 +6,7 @@ import path from "path";
 import { connectDB } from "./config/db.js";
 import rateLimiter from "./middleware/rateLimiter.js";
 import notesRoutes from "./routes/notesRoutes.js";
-import sensorDataRoutes from "./routes/sensorDataRoutes.js";
+import sensorDataRoutes from "./routes/sensordataRoutes.js";
 import weatherRoutes from "./routes/weatherRoutes.js";
 
 
