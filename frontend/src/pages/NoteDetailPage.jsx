@@ -1,4 +1,4 @@
-import { ArrowLeftIcon, CalendarIcon, CloudIcon, DropletIcon, LoaderIcon, ThermometerIcon, Trash2Icon, WindIcon } from "lucide-react";
+import { ArrowLeftIcon, CloudIcon, DropletIcon, LoaderIcon, ThermometerIcon, Trash2Icon, WindIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -9,10 +9,7 @@ const NoteDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [weather, setWeather] = useState(null);
-  const [forecast, setForecast] = useState(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
-  const [forecastLoading, setForecastLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('current'); // 'current' or 'forecast'
 
   const navigate = useNavigate();
   const { id } = useParams();
@@ -45,7 +42,6 @@ const NoteDetailPage = () => {
       
       if (response.data.success) {
         setWeather(response.data.data);
-        setActiveTab('current');
       } else {
         throw new Error(response.data.message || 'Failed to fetch weather data');
       }
@@ -54,30 +50,6 @@ const NoteDetailPage = () => {
       toast.error(`Failed to fetch weather data: ${error.response?.data?.message || error.message}`);
     } finally {
       setWeatherLoading(false);
-    }
-  };
-
-  const fetchForecast = async () => {
-    if (!note?.location?.latitude || !note?.location?.longitude) {
-      toast.error("Location coordinates are required for forecast data");
-      return;
-    }
-
-    setForecastLoading(true);
-    try {
-      const response = await api.get(`/weather/forecast?lat=${note.location.latitude}&lon=${note.location.longitude}&days=5`);
-      
-      if (response.data.success) {
-        setForecast(response.data.data);
-        setActiveTab('forecast');
-      } else {
-        throw new Error(response.data.message || 'Failed to fetch forecast data');
-      }
-    } catch (error) {
-      console.log("Error fetching forecast:", error);
-      toast.error(`Failed to fetch forecast data: ${error.response?.data?.message || error.message}`);
-    } finally {
-      setForecastLoading(false);
     }
   };
 
@@ -218,46 +190,16 @@ const NoteDetailPage = () => {
                   <CloudIcon className="h-5 w-5" />
                   Weather Information
                 </h2>
-                <div className="flex gap-2">
-                  <button 
-                    onClick={fetchWeather} 
-                    className="btn btn-secondary btn-outline btn-sm"
-                    disabled={weatherLoading}
-                  >
-                    {weatherLoading ? <LoaderIcon className="animate-spin h-4 w-4" /> : "Current"}
-                  </button>
-                  <button 
-                    onClick={fetchForecast} 
-                    className="btn btn-info btn-outline btn-sm"
-                    disabled={forecastLoading}
-                  >
-                    {forecastLoading ? <LoaderIcon className="animate-spin h-4 w-4" /> : "Forecast"}
-                  </button>
-                </div>
+                <button 
+                  onClick={fetchWeather} 
+                  className="btn btn-secondary btn-outline btn-sm"
+                  disabled={weatherLoading}
+                >
+                  {weatherLoading ? <LoaderIcon className="animate-spin h-4 w-4" /> : "Get Weather"}
+                </button>
               </div>
 
-              {/* Tab Navigation */}
-              {(weather || forecast) && (
-                <div className="tabs tabs-bordered mb-4">
-                  <button 
-                    className={`tab ${activeTab === 'current' ? 'tab-active' : ''}`}
-                    onClick={() => setActiveTab('current')}
-                    disabled={!weather}
-                  >
-                    Current Weather
-                  </button>
-                  <button 
-                    className={`tab ${activeTab === 'forecast' ? 'tab-active' : ''}`}
-                    onClick={() => setActiveTab('forecast')}
-                    disabled={!forecast}
-                  >
-                    5-Day Forecast
-                  </button>
-                </div>
-              )}
-
-              {/* Current Weather Display */}
-              {activeTab === 'current' && weather && (
+              {weather ? (
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex items-center gap-2">
                     <ThermometerIcon className="h-5 w-5 text-red-500" />
@@ -291,59 +233,10 @@ const NoteDetailPage = () => {
                     </div>
                   </div>
                 </div>
-              )}
-
-              {/* Forecast Display */}
-              {activeTab === 'forecast' && forecast && (
-                <div className="space-y-4">
-                  <div className="text-sm text-gray-600 mb-4">
-                    Location: {forecast.location}, {forecast.country}
-                  </div>
-                  
-                  <div className="grid gap-4">
-                    {forecast.forecasts.map((day, index) => (
-                      <div key={index} className="border rounded-lg p-4 bg-base-50">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <CalendarIcon className="h-4 w-4 text-gray-500" />
-                            <span className="font-medium">{day.dayOfWeek}</span>
-                            <span className="text-sm text-gray-500">{day.dateISO}</span>
-                          </div>
-                          <span className="text-sm font-medium capitalize">{day.description}</span>
-                        </div>
-                        
-                        <div className="grid grid-cols-4 gap-4 text-sm">
-                          <div className="flex items-center gap-1">
-                            <ThermometerIcon className="h-4 w-4 text-red-500" />
-                            <span>{day.temperature.min}°/{day.temperature.max}°C</span>
-                          </div>
-                          
-                          <div className="flex items-center gap-1">
-                            <DropletIcon className="h-4 w-4 text-blue-500" />
-                            <span>{day.humidity}%</span>
-                          </div>
-                          
-                          <div className="flex items-center gap-1">
-                            <WindIcon className="h-4 w-4 text-gray-500" />
-                            <span>{day.windSpeed} m/s</span>
-                          </div>
-                          
-                          <div className="flex items-center gap-1">
-                            <CloudIcon className="h-4 w-4 text-gray-400" />
-                            <span>{day.cloudiness}%</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Empty State */}
-              {!weather && !forecast && (
+              ) : (
                 <div className="text-center py-8 text-gray-500">
                   <CloudIcon className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>Click "Current" or "Forecast" to fetch weather data</p>
+                  <p>Click "Get Weather" to fetch current weather data</p>
                 </div>
               )}
             </div>
