@@ -1,4 +1,5 @@
-import Note from "../models/Note.js";
+import models from "../models/Note.js";
+const { Note } = models;
 
 export async function getAllNotes(_, res) {
   try {
@@ -23,8 +24,8 @@ export async function getNoteById(req, res) {
 
 export async function createNote(req, res) {
   try {
-    const { title, content } = req.body;
-    const note = new Note({ title, content });
+    const { device_name, substation, location } = req.body;
+    const note = new Note({ device_name, substation, location });
 
     const savedNote = await note.save();
     res.status(201).json(savedNote);
@@ -36,10 +37,10 @@ export async function createNote(req, res) {
 
 export async function updateNote(req, res) {
   try {
-    const { title, content } = req.body;
+    const { device_name, substation, location } = req.body;
     const updatedNote = await Note.findByIdAndUpdate(
       req.params.id,
-      { title, content },
+      { device_name, substation, location },
       {
         new: true,
       }
@@ -64,3 +65,5 @@ export async function deleteNote(req, res) {
     res.status(500).json({ message: "Internal server error" });
   }
 }
+
+

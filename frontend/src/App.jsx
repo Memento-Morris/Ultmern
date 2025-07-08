@@ -1,7 +1,8 @@
 import { Route, Routes } from "react-router";
 
-import HomePage from "./pages/HomePage";
 import CreatePage from "./pages/CreatePage";
+import DataPage from "./pages/DataPage";
+import HomePage from "./pages/HomePage";
 import NoteDetailPage from "./pages/NoteDetailPage";
 
 const App = () => {
@@ -12,6 +13,8 @@ const App = () => {
         <Route path="/" element={<HomePage />} />
         <Route path="/create" element={<CreatePage />} />
         <Route path="/note/:id" element={<NoteDetailPage />} />
+        <Route path="/sensor-data/:id" element={<DataPage />} />
+
       </Routes>
     </div>
   );
