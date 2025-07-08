@@ -7,9 +7,9 @@ const NotesNotFound = () => {
       <div className="bg-primary/10 rounded-full p-8">
         <NotebookIcon className="size-10 text-primary" />
       </div>
-      <h3 className="text-2xl font-bold">No notes yet</h3>
+      <h3 className="text-2xl font-bold">No devices yet</h3>
       <p className="text-base-content/70">
-        Ready to organize your thoughts? Create your first note to get started on your journey.
+        Setup your first Device to start analysing.
       </p>
       <Link to="/create" className="btn btn-primary">
         Create Your First Note
