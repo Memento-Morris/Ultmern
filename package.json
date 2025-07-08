@@ -9,5 +9,13 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Memento-Morris/Ultmern.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Memento-Morris/Ultmern/issues"
+  },
+  "homepage": "https://github.com/Memento-Morris/Ultmern#readme",
   "description": ""
 }
