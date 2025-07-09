@@ -1,92 +1,31 @@
-import { Activity, ArrowLeft, Calendar, Filter, Loader, TrendingUp, Zap, AlertCircle, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
-import { useEffect, useMemo, useState, useCallback } from "react";
-import { Link } from "react-router-dom";
-import { Area, AreaChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Brush, ReferenceArea } from 'recharts';
+import { Activity, ArrowLeft, Calendar, Cloud, Filter, Loader, TrendingUp, Zap } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
+import { Link, useParams } from "react-router-dom";
+import { Area, AreaChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import api from "../lib/axios";
 
-// Mock API for demonstration
-const mockApi = {
-  get: async (url) => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Mock device data
-    const deviceData = {
-      device: {
-        _id: "device_001",
-        device_name: "PMU-001",
-        substation: "Main Substation",
-        location: { lat: -33.9249, lon: 18.4241 } // Cape Town coordinates
-      },
-      sensorData: generateMockSensorData(100)
-    };
-    
-    return { data: deviceData };
-  }
-};
-
-// Generate mock sensor data
-function generateMockSensorData(count) {
-  const data = [];
-  const now = new Date();
+const DataPage = () => {
+  const [sensorData, setSensorData] = useState([]);
+  const [deviceInfo, setDeviceInfo] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(20);
+  const [selectedMetric, setSelectedMetric] = useState('frequency');
+  const [showRawData, setShowRawData] = useState(false);
   
-  for (let i = 0; i < count; i++) {
-    const timestamp = new Date(now.getTime() - i * 5 * 60 * 1000); // 5 minutes apart
-    data.push({
-      _id: `reading_${i}`,
-      timestamp: timestamp.toISOString(),
-      measurements: {
-        frequency: 50 + (Math.random() - 0.5) * 0.5, // 49.75 to 50.25 Hz
-        voltage_phasors: [
-          { channel: 'VA', magnitude: 220 + (Math.random() - 0.5) * 20, angle: Math.random() * 360 },
-          { channel: 'VB', magnitude: 220 + (Math.random() - 0.5) * 20, angle: Math.random() * 360 },
-          { channel: 'VC', magnitude: 220 + (Math.random() - 0.5) * 20, angle: Math.random() * 360 }
-        ],
-        current_phasors: [
-          { channel: 'IA', magnitude: 10 + Math.random() * 50, angle: Math.random() * 360 },
-          { channel: 'IB', magnitude: 10 + Math.random() * 50, angle: Math.random() * 360 },
-          { channel: 'IC', magnitude: 10 + Math.random() * 50, angle: Math.random() * 360 }
-        ]
-      }
-    });
-  }
-  
-  return data;
-}
+  // Time range filtering states
+  const [timeRange, setTimeRange] = useState('1w'); // '1h', '6h', '1d', '1w', '1m', 'custom'
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+  const [weatherData, setWeatherData] = useState(null);
+  const [weatherLoading, setWeatherLoading] = useState(false);
 
-// Custom hook for chart zoom functionality
-const useChartZoom = (data) => {
-  const [zoomDomain, setZoomDomain] = useState({ left: null, right: null });
-  const [isZooming, setIsZooming] = useState(false);
+  const { id } = useParams();
 
-  const resetZoom = useCallback(() => {
-    setZoomDomain({ left: null, right: null });
-  }, []);
-
-  const handleZoom = useCallback((domain) => {
-    if (domain && domain.left !== domain.right) {
-      setZoomDomain(domain);
-    }
-  }, []);
-
-  const filteredData = useMemo(() => {
-    if (!data || !zoomDomain.left || !zoomDomain.right) return data;
-    
-    return data.filter((item, index) => {
-      return index >= zoomDomain.left && index <= zoomDomain.right;
-    });
-  }, [data, zoomDomain]);
-
-  return {
-    zoomDomain,
-    isZooming,
-    setIsZooming,
-    resetZoom,
-    handleZoom,
-    filteredData
-  };
-};
-const useTimeRangeFilter = (timeRange, customStartDate, customEndDate) => {
-  return useMemo(() => {
+  // Calculate time range filter
+  const getTimeRangeFilter = () => {
     const now = new Date();
     let startDate;
     
@@ -119,262 +58,54 @@ const useTimeRangeFilter = (timeRange, customStartDate, customEndDate) => {
     }
     
     return { start: startDate, end: now };
-  }, [timeRange, customStartDate, customEndDate]);
-};
-
-// Zoomable Chart Component
-const ZoomableChart = ({ 
-  data, 
-  title, 
-  icon: Icon, 
-  iconColor,
-  children,
-  yAxisDomain,
-  height = 300 
-}) => {
-  const { zoomDomain, isZooming, setIsZooming, resetZoom, handleZoom, filteredData } = useChartZoom(data);
-  const [refAreaLeft, setRefAreaLeft] = useState('');
-  const [refAreaRight, setRefAreaRight] = useState('');
-
-  const handleMouseDown = (e) => {
-    if (e && e.activeLabel) {
-      setRefAreaLeft(e.activeLabel);
-      setIsZooming(true);
-    }
   };
-
-  const handleMouseMove = (e) => {
-    if (isZooming && e && e.activeLabel) {
-      setRefAreaRight(e.activeLabel);
-    }
-  };
-
-  const handleMouseUp = () => {
-    if (refAreaLeft && refAreaRight) {
-      const leftIndex = data.findIndex(item => item.timestamp === refAreaLeft);
-      const rightIndex = data.findIndex(item => item.timestamp === refAreaRight);
-      
-      if (leftIndex !== -1 && rightIndex !== -1) {
-        const left = Math.min(leftIndex, rightIndex);
-        const right = Math.max(leftIndex, rightIndex);
-        handleZoom({ left, right });
-      }
-    }
-    setIsZooming(false);
-    setRefAreaLeft('');
-    setRefAreaRight('');
-  };
-
-  return (
-    <div className="bg-white p-6 rounded-lg shadow">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Icon className={`w-5 h-5 ${iconColor}`} />
-          {title}
-        </h3>
-        <div className="flex items-center gap-2">
-          {(zoomDomain.left !== null || zoomDomain.right !== null) && (
-            <button
-              onClick={resetZoom}
-              className="flex items-center gap-1 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-            >
-              <RotateCcw className="w-4 h-4" />
-              Reset Zoom
-            </button>
-          )}
-          <div className="flex items-center gap-1 text-xs text-gray-500">
-            <ZoomIn className="w-3 h-3" />
-            Click and drag to zoom
-          </div>
-        </div>
-      </div>
-      
-      <ResponsiveContainer width="100%" height={height}>
-        <LineChart
-          data={filteredData || data}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-        >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="timestamp" />
-          <YAxis domain={yAxisDomain} />
-          <Tooltip 
-            labelFormatter={(label) => `Time: ${label}`}
-            formatter={(value, name) => [
-              typeof value === 'number' ? value.toFixed(2) : value,
-              name
-            ]}
-          />
-          {children}
-          {refAreaLeft && refAreaRight && (
-            <ReferenceArea
-              x1={refAreaLeft}
-              x2={refAreaRight}
-              strokeOpacity={0.3}
-              fillOpacity={0.1}
-              fill="#3b82f6"
-            />
-          )}
-        </LineChart>
-      </ResponsiveContainer>
-      
-      {data && data.length > 20 && (
-        <div className="mt-4">
-          <ResponsiveContainer width="100%" height={60}>
-            <LineChart data={data}>
-              <XAxis dataKey="timestamp" />
-              <Brush 
-                dataKey="timestamp"
-                height={30}
-                stroke="#3b82f6"
-                onChange={(brushData) => {
-                  if (brushData && brushData.startIndex !== undefined && brushData.endIndex !== undefined) {
-                    handleZoom({ left: brushData.startIndex, right: brushData.endIndex });
-                  }
-                }}
-              />
-              {React.cloneElement(children, { dot: false, strokeWidth: 1 })}
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Stats Card Component
-const StatsCard = ({ title, value, icon: Icon, color = "blue", subtitle }) => (
-  <div className="bg-white p-6 rounded-lg shadow hover:shadow-md transition-shadow">
-    <div className="flex items-center justify-between">
-      <div>
-        <p className="text-sm text-gray-600">{title}</p>
-        <p className={`text-2xl font-bold text-${color}-600`}>{value}</p>
-        {subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
-      </div>
-      <Icon className={`w-8 h-8 text-${color}-500`} />
-    </div>
-  </div>
-);
-
-// Time Range Filter Component
-const TimeRangeFilter = ({ 
-  timeRange, 
-  setTimeRange, 
-  customStartDate, 
-  setCustomStartDate, 
-  customEndDate, 
-  setCustomEndDate,
-  dataCount,
-  totalCount,
-  onPageReset
-}) => {
-  const timeRanges = [
-    { value: '1h', label: '1 Hour' },
-    { value: '6h', label: '6 Hours' },
-    { value: '1d', label: '1 Day' },
-    { value: '1w', label: '1 Week' },
-    { value: '1m', label: '1 Month' },
-    { value: 'custom', label: 'Custom' }
-  ];
-
-  return (
-    <div className="bg-white p-4 rounded-lg shadow mb-6">
-      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-        <Filter className="w-5 h-5 text-blue-500" />
-        Time Range Filter
-      </h3>
-      <div className="flex flex-wrap items-center gap-4">
-        <div className="flex gap-2">
-          {timeRanges.map(range => (
-            <button
-              key={range.value}
-              onClick={() => {
-                setTimeRange(range.value);
-                onPageReset();
-              }}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                timeRange === range.value
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {range.label}
-            </button>
-          ))}
-        </div>
-        
-        {timeRange === 'custom' && (
-          <div className="flex items-center gap-2">
-            <input
-              type="datetime-local"
-              value={customStartDate}
-              onChange={(e) => setCustomStartDate(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-            <span className="text-gray-500">to</span>
-            <input
-              type="datetime-local"
-              value={customEndDate}
-              onChange={(e) => setCustomEndDate(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-        )}
-        
-        <div className="text-sm text-gray-600">
-          Showing {dataCount} of {totalCount} records
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Main Dashboard Component
-const DataPage = () => {
-  const [sensorData, setSensorData] = useState([]);
-  const [deviceInfo, setDeviceInfo] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(20);
-  const [showRawData, setShowRawData] = useState(false);
-  
-  // Time range filtering states
-  const [timeRange, setTimeRange] = useState('1w');
-  const [customStartDate, setCustomStartDate] = useState('');
-  const [customEndDate, setCustomEndDate] = useState('');
-
-  // Mock device ID for demonstration
-  const id = "device_001";
-
-  // Use custom hook for time range filtering
-  const timeFilter = useTimeRangeFilter(timeRange, customStartDate, customEndDate);
 
   // Filter sensor data based on time range
   const filteredSensorData = useMemo(() => {
     if (!sensorData.length) return [];
     
-    if (!timeFilter) return sensorData;
+    const filter = getTimeRangeFilter();
+    if (!filter) return sensorData;
     
     return sensorData.filter(reading => {
       const readingDate = new Date(reading.timestamp);
-      return readingDate >= timeFilter.start && readingDate <= timeFilter.end;
+      return readingDate >= filter.start && readingDate <= filter.end;
     });
-  }, [sensorData, timeFilter]);
+  }, [sensorData, timeRange, customStartDate, customEndDate]);
 
-  // Fetch data
+  // Fetch weather data
+  const fetchWeatherData = async () => {
+    if (!deviceInfo?.location) return;
+    
+    try {
+      setWeatherLoading(true);
+      // Example using OpenWeatherMap API - you'll need to replace with your actual API key
+      const response = await fetch(
+        `https://api.openweathermap.org/data/2.5/weather?lat=${deviceInfo.location.lat}&lon=${deviceInfo.location.lon}&appid=YOUR_API_KEY&units=metric`
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        setWeatherData(data);
+      }
+    } catch (error) {
+      console.error('Weather fetch error:', error);
+    } finally {
+      setWeatherLoading(false);
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        setError(null);
-        const response = await mockApi.get(`/sensor-data/device/${id}`);
-        setSensorData(response.data.sensorData);
-        setDeviceInfo(response.data.device);
+        const sensorResponse = await api.get(`/sensor-data/device/${id}`);
+        setSensorData(sensorResponse.data.sensorData);
+        setDeviceInfo(sensorResponse.data.device);
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.log("Error fetching data:", error);
         setError("Failed to fetch sensor data");
+        toast.error("Failed to load sensor data");
       } finally {
         setLoading(false);
       }
@@ -383,10 +114,18 @@ const DataPage = () => {
     fetchData();
   }, [id]);
 
+  // Fetch weather when device info is available
+  useEffect(() => {
+    if (deviceInfo) {
+      fetchWeatherData();
+    }
+  }, [deviceInfo]);
+
   // Prepare chart data
   const chartData = useMemo(() => {
     if (!filteredSensorData.length) return [];
     
+    // Sort by timestamp and limit for performance
     const sorted = [...filteredSensorData].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     const maxPoints = timeRange === '1h' ? 60 : timeRange === '6h' ? 100 : 200;
     const recent = sorted.slice(-maxPoints);
@@ -404,8 +143,31 @@ const DataPage = () => {
     }));
   }, [filteredSensorData, timeRange]);
 
-  // Calculate statistics
-  const stats = useMemo(() => {
+  // Pagination for raw data
+  const totalPages = Math.ceil(filteredSensorData.length / itemsPerPage);
+  const paginatedData = filteredSensorData
+    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const formatDateTime = (dateString) => {
+    return new Date(dateString).toLocaleString();
+  };
+
+  const formatValue = (value) => {
+    if (typeof value === 'number') {
+      return value.toFixed(2);
+    }
+    return value;
+  };
+
+  const getFrequencyStatus = (frequency) => {
+    const diff = Math.abs(frequency - 50);
+    if (diff <= 0.1) return "text-green-500";
+    if (diff <= 0.5) return "text-yellow-500";
+    return "text-red-500";
+  };
+
+  const calculateStats = () => {
     if (filteredSensorData.length === 0) return {};
     
     const frequencies = filteredSensorData.map(d => d.measurements.frequency);
@@ -416,33 +178,18 @@ const DataPage = () => {
       avgFrequency: frequencies.reduce((a, b) => a + b, 0) / frequencies.length,
       avgVoltage: voltages.reduce((a, b) => a + b, 0) / voltages.length,
       avgCurrent: currents.reduce((a, b) => a + b, 0) / currents.length,
+      minFreq: Math.min(...frequencies),
+      maxFreq: Math.max(...frequencies),
       latestReading: filteredSensorData.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0]
     };
-  }, [filteredSensorData]);
-
-  // Pagination
-  const totalPages = Math.ceil(filteredSensorData.length / itemsPerPage);
-  const paginatedData = filteredSensorData
-    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
-  // Utility functions
-  const formatDateTime = (dateString) => new Date(dateString).toLocaleString();
-  const formatValue = (value) => typeof value === 'number' ? value.toFixed(2) : value;
-  const getFrequencyStatus = (frequency) => {
-    const diff = Math.abs(frequency - 50);
-    if (diff <= 0.1) return "text-green-500";
-    if (diff <= 0.5) return "text-yellow-500";
-    return "text-red-500";
   };
+
+  const stats = calculateStats();
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader className="animate-spin w-12 h-12 text-blue-500 mx-auto mb-4" />
-          <p className="text-gray-600">Loading sensor data...</p>
-        </div>
+        <Loader className="animate-spin w-10 h-10 text-blue-500" />
       </div>
     );
   }
@@ -458,12 +205,8 @@ const DataPage = () => {
                 Back to Device
               </Link>
             </div>
-            <div className="bg-red-50 border border-red-200 rounded-lg p-6 flex items-center gap-3">
-              <AlertCircle className="w-6 h-6 text-red-500" />
-              <div>
-                <h3 className="font-semibold text-red-800">Error Loading Data</h3>
-                <p className="text-red-700">{error}</p>
-              </div>
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+              <span>{error}</span>
             </div>
           </div>
         </div>
@@ -478,7 +221,7 @@ const DataPage = () => {
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <Link to={`/note/${id}`} className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow hover:shadow-md transition-shadow">
-              <ArrowLeft className="h-5 w-5" />
+                              <ArrowLeft className="h-5 w-5" />
               Back to Device
             </Link>
             <div className="text-right">
@@ -492,78 +235,171 @@ const DataPage = () => {
           </div>
 
           {/* Time Range Filter */}
-          <TimeRangeFilter
-            timeRange={timeRange}
-            setTimeRange={setTimeRange}
-            customStartDate={customStartDate}
-            setCustomStartDate={setCustomStartDate}
-            customEndDate={customEndDate}
-            setCustomEndDate={setCustomEndDate}
-            dataCount={filteredSensorData.length}
-            totalCount={sensorData.length}
-            onPageReset={() => setCurrentPage(1)}
-          />
+          <div className="bg-white p-4 rounded-lg shadow mb-6">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Filter className="w-5 h-5 text-blue-500" />
+              Time Range Filter
+            </h3>
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex gap-2">
+                {[
+                  { value: '1h', label: '1 Hour' },
+                  { value: '6h', label: '6 Hours' },
+                  { value: '1d', label: '1 Day' },
+                  { value: '1w', label: '1 Week' },
+                  { value: '1m', label: '1 Month' },
+                  { value: 'custom', label: 'Custom' }
+                ].map(range => (
+                  <button
+                    key={range.value}
+                    onClick={() => {
+                      setTimeRange(range.value);
+                      setCurrentPage(1);
+                    }}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      timeRange === range.value
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {range.label}
+                  </button>
+                ))}
+              </div>
+              
+              {timeRange === 'custom' && (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="datetime-local"
+                    value={customStartDate}
+                    onChange={(e) => setCustomStartDate(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  />
+                  <span className="text-gray-500">to</span>
+                  <input
+                    type="datetime-local"
+                    value={customEndDate}
+                    onChange={(e) => setCustomEndDate(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  />
+                </div>
+              )}
+              
+              <div className="text-sm text-gray-600">
+                Showing {filteredSensorData.length} of {sensorData.length} records
+              </div>
+            </div>
+          </div>
+
+          {/* Weather Widget */}
+          {weatherData && (
+            <div className="bg-white p-4 rounded-lg shadow mb-6">
+              <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                <Cloud className="w-5 h-5 text-blue-500" />
+                Current Weather
+              </h3>
+              <div className="flex items-center gap-4">
+                <div className="text-2xl font-bold text-blue-600">
+                  {Math.round(weatherData.main.temp)}°C
+                </div>
+                <div className="text-gray-600">
+                  {weatherData.weather[0].description}
+                </div>
+                <div className="text-sm text-gray-500">
+                  Humidity: {weatherData.main.humidity}% | Wind: {weatherData.wind.speed} m/s
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Stats Overview */}
           {filteredSensorData.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <StatsCard
-                title="Filtered Records"
-                value={filteredSensorData.length}
-                icon={Calendar}
-                color="blue"
-              />
-              <StatsCard
-                title="Latest Frequency"
-                value={`${formatValue(stats.latestReading?.measurements.frequency)} Hz`}
-                icon={Zap}
-                color="green"
-                subtitle={formatDateTime(stats.latestReading?.timestamp)}
-              />
-              <StatsCard
-                title="Avg Voltage"
-                value={`${formatValue(stats.avgVoltage)} V`}
-                icon={TrendingUp}
-                color="yellow"
-              />
-              <StatsCard
-                title="Avg Current"
-                value={`${formatValue(stats.avgCurrent)} A`}
-                icon={Activity}
-                color="purple"
-              />
+              <div className="bg-white p-6 rounded-lg shadow">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Filtered Records</p>
+                    <p className="text-2xl font-bold text-blue-600">{filteredSensorData.length}</p>
+                  </div>
+                  <Calendar className="w-8 h-8 text-blue-500" />
+                </div>
+              </div>
+              <div className="bg-white p-6 rounded-lg shadow">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Latest Frequency</p>
+                    <p className={`text-2xl font-bold ${getFrequencyStatus(stats.latestReading?.measurements.frequency)}`}>
+                      {formatValue(stats.latestReading?.measurements.frequency)} Hz
+                    </p>
+                  </div>
+                  <Zap className="w-8 h-8 text-green-500" />
+                </div>
+              </div>
+              <div className="bg-white p-6 rounded-lg shadow">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Avg Voltage</p>
+                    <p className="text-2xl font-bold text-yellow-600">{formatValue(stats.avgVoltage)} V</p>
+                  </div>
+                  <TrendingUp className="w-8 h-8 text-yellow-500" />
+                </div>
+              </div>
+              <div className="bg-white p-6 rounded-lg shadow">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Last Updated</p>
+                    <p className="text-sm font-medium text-purple-600">
+                      {stats.latestReading ? formatDateTime(stats.latestReading.timestamp) : 'N/A'}
+                    </p>
+                  </div>
+                  <Activity className="w-8 h-8 text-purple-500" />
+                </div>
+              </div>
             </div>
           )}
 
           {/* Charts Section */}
           {chartData.length > 0 && (
-            <div className="space-y-6 mb-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
               {/* Frequency Chart */}
-              <ZoomableChart
-                data={chartData}
-                title="Frequency Trend"
-                icon={Zap}
-                iconColor="text-blue-500"
-                yAxisDomain={[49, 51]}
-              >
-                <Line type="monotone" dataKey="frequency" stroke="#3b82f6" strokeWidth={2} dot={false} name="Frequency (Hz)" />
-              </ZoomableChart>
+              <div className="bg-white p-6 rounded-lg shadow">
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-blue-500" />
+                  Frequency Trend
+                </h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="timestamp" />
+                    <YAxis domain={[49, 51]} />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="frequency" stroke="#3b82f6" strokeWidth={2} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
 
               {/* Voltage Chart */}
-              <ZoomableChart
-                data={chartData}
-                title="Voltage Phasors"
-                icon={TrendingUp}
-                iconColor="text-yellow-500"
-              >
-                <Legend />
-                <Line type="monotone" dataKey="va_voltage" stroke="#ef4444" strokeWidth={2} dot={false} name="VA (V)" />
-                <Line type="monotone" dataKey="vb_voltage" stroke="#f59e0b" strokeWidth={2} dot={false} name="VB (V)" />
-                <Line type="monotone" dataKey="vc_voltage" stroke="#10b981" strokeWidth={2} dot={false} name="VC (V)" />
-              </ZoomableChart>
+              <div className="bg-white p-6 rounded-lg shadow">
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-yellow-500" />
+                  Voltage Phasors
+                </h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="timestamp" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="va_voltage" stroke="#ef4444" strokeWidth={2} dot={false} name="VA" />
+                    <Line type="monotone" dataKey="vb_voltage" stroke="#f59e0b" strokeWidth={2} dot={false} name="VB" />
+                    <Line type="monotone" dataKey="vc_voltage" stroke="#10b981" strokeWidth={2} dot={false} name="VC" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
 
               {/* Current Chart */}
-              <div className="bg-white p-6 rounded-lg shadow">
+              <div className="bg-white p-6 rounded-lg shadow lg:col-span-2">
                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                   <Activity className="w-5 h-5 text-purple-500" />
                   Current Phasors
@@ -573,15 +409,11 @@ const DataPage = () => {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="timestamp" />
                     <YAxis />
-                    <Tooltip 
-                      labelFormatter={(label) => `Time: ${label}`}
-                      formatter={(value) => [`${formatValue(value)} A`]}
-                    />
+                    <Tooltip />
                     <Legend />
                     <Area type="monotone" dataKey="ia_current" stackId="1" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.6} name="IA" />
                     <Area type="monotone" dataKey="ib_current" stackId="1" stroke="#06b6d4" fill="#06b6d4" fillOpacity={0.6} name="IB" />
                     <Area type="monotone" dataKey="ic_current" stackId="1" stroke="#84cc16" fill="#84cc16" fillOpacity={0.6} name="IC" />
-                    <Brush dataKey="timestamp" height={30} stroke="#8b5cf6" />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -599,7 +431,7 @@ const DataPage = () => {
             </button>
             {showRawData && (
               <div className="text-sm text-gray-600">
-                Page {currentPage} of {totalPages} • Showing {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, filteredSensorData.length)} of {filteredSensorData.length} records
+                Showing {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, filteredSensorData.length)} of {filteredSensorData.length} records
               </div>
             )}
           </div>
@@ -609,7 +441,6 @@ const DataPage = () => {
             <>
               {filteredSensorData.length === 0 ? (
                 <div className="bg-white p-8 rounded-lg shadow text-center">
-                  <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                   <h2 className="text-xl font-semibold mb-2">No Sensor Data Found</h2>
                   <p className="text-gray-600">
                     No sensor data available for the selected time range.
@@ -618,11 +449,11 @@ const DataPage = () => {
               ) : (
                 <div className="space-y-4">
                   {paginatedData.map((reading) => (
-                    <div key={reading._id} className="bg-white rounded-lg shadow hover:shadow-md transition-shadow">
+                    <div key={reading._id} className="bg-white rounded-lg shadow">
                       <div className="p-6">
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center gap-4">
-                            <div className="px-3 py-1 bg-gray-100 rounded-full text-sm font-medium">
+                            <div className="px-3 py-1 bg-gray-100 rounded-full text-sm">
                               {formatDateTime(reading.timestamp)}
                             </div>
                             <div className={`px-3 py-1 rounded-full text-sm font-medium ${getFrequencyStatus(reading.measurements.frequency)} bg-gray-100`}>
@@ -634,15 +465,15 @@ const DataPage = () => {
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                           {/* Voltage Phasors */}
                           <div>
-                            <h4 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                               <Zap className="w-5 h-5 text-yellow-500" />
                               Voltage Phasors
-                            </h4>
+                            </h3>
                             <div className="space-y-2">
                               {reading.measurements.voltage_phasors.map((phasor, index) => (
                                 <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                   <div className="flex items-center gap-3">
-                                    <div className="px-2 py-1 bg-yellow-500 text-white text-xs rounded font-medium">{phasor.channel}</div>
+                                    <div className="px-2 py-1 bg-yellow-500 text-white text-xs rounded">{phasor.channel}</div>
                                     <span className="font-medium">{formatValue(phasor.magnitude)} V</span>
                                   </div>
                                   <div className="text-sm text-gray-600">
@@ -655,15 +486,15 @@ const DataPage = () => {
 
                           {/* Current Phasors */}
                           <div>
-                            <h4 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                               <Activity className="w-5 h-5 text-blue-500" />
                               Current Phasors
-                            </h4>
+                            </h3>
                             <div className="space-y-2">
                               {reading.measurements.current_phasors.map((phasor, index) => (
                                 <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                   <div className="flex items-center gap-3">
-                                    <div className="px-2 py-1 bg-blue-500 text-white text-xs rounded font-medium">{phasor.channel}</div>
+                                    <div className="px-2 py-1 bg-blue-500 text-white text-xs rounded">{phasor.channel}</div>
                                     <span className="font-medium">{formatValue(phasor.magnitude)} A</span>
                                   </div>
                                   <div className="text-sm text-gray-600">
@@ -696,4 +527,30 @@ const DataPage = () => {
                             <button
                               key={pageNum}
                               onClick={() => setCurrentPage(pageNum)}
-                              className={`px-3 py-2 rounded-lg ${currentPage === pageNum ? 'bg-blue-500 text-white' : 'bg-white
+                              className={`px-3 py-2 rounded-lg ${currentPage === pageNum ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'} shadow transition-colors`}
+                            >
+                              {pageNum}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                        disabled={currentPage === totalPages}
+                        className="px-4 py-2 bg-white rounded-lg shadow hover:shadow-md transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default DataPage;
