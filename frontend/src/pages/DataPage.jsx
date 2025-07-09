@@ -16,7 +16,7 @@ const DataPage = () => {
   const [showRawData, setShowRawData] = useState(false);
   
   // Time range filtering states
-  const [timeRange, setTimeRange] = useState('1h'); // '1h', '6h', '1d', '1w', '1m', 'custom'
+  const [timeRange, setTimeRange] = useState('1w'); // '1h', '6h', '1d', '1w', '1m', 'custom'
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
   const [weatherData, setWeatherData] = useState(null);
