@@ -121,44 +121,44 @@ const ZoomableChart = ({ data, title, children, icon: Icon }) => {
   const displayData = zoomDomain ? data.slice(zoomDomain[0], zoomDomain[1] + 1) : data;
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow">
+    <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Icon className="w-5 h-5 text-blue-500" />
+        <h3 className="text-md sm:text-lg font-semibold flex items-center gap-2">
+          <Icon className="w-4 sm:w-5 h-4 sm:h-5 text-blue-500" />
           {title}
         </h3>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           <button
             onClick={handleZoomIn}
             disabled={isZoomed}
-            className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-1 sm:p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
             title="Zoom In"
           >
-            <ZoomIn className="w-4 h-4" />
+            <ZoomIn className="w-3 sm:w-4 h-3 sm:h-4" />
           </button>
           <button
             onClick={handleZoomOut}
             disabled={!isZoomed}
-            className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-1 sm:p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
             title="Zoom Out"
           >
-            <ZoomOut className="w-4 h-4" />
+            <ZoomOut className="w-3 sm:w-4 h-3 sm:h-4" />
           </button>
           <button
             onClick={handleReset}
             disabled={!isZoomed}
-            className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-1 sm:p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
             title="Reset Zoom"
           >
-            <RotateCcw className="w-4 h-4" />
+            <RotateCcw className="w-3 sm:w-4 h-3 sm:h-4" />
           </button>
         </div>
       </div>
-      <ResponsiveContainer width="100%" height={300}>
+      <ResponsiveContainer width="100%" height={200}>
         {children(displayData)}
       </ResponsiveContainer>
       {isZoomed && (
-        <div className="mt-2 text-sm text-gray-600">
+        <div className="mt-2 text-xs sm:text-sm text-gray-600">
           Showing {zoomDomain[1] - zoomDomain[0] + 1} of {data.length} data points
         </div>
       )}
@@ -249,14 +249,26 @@ const DataPage = () => {
     fetchData();
   }, [id]);
 
-  // Prepare chart data
+  // Enhanced formatDateTime function
+  const formatDateTime = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleString([], {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // Prepare chart data with better time formatting
   const chartData = useMemo(() => {
     if (!filteredSensorData.length) return [];
     
     const sorted = [...filteredSensorData].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     
     return sorted.map((reading, index) => ({
-      timestamp: new Date(reading.timestamp).toLocaleTimeString(),
+      timestamp: new Date(reading.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       fullTimestamp: reading.timestamp,
       index: index,
       frequency: reading.measurements.frequency,
@@ -274,10 +286,6 @@ const DataPage = () => {
   const paginatedData = filteredSensorData
     .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
     .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
-  const formatDateTime = (dateString) => {
-    return new Date(dateString).toLocaleString();
-  };
 
   const formatValue = (value) => {
     if (typeof value === 'number') {
@@ -314,35 +322,35 @@ const DataPage = () => {
 
   // Render item for virtual list
   const renderVirtualItem = useCallback((reading, index) => (
-    <div className="bg-white rounded-lg shadow m-2 border">
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-4">
-            <div className="px-3 py-1 bg-gray-100 rounded-full text-sm">
+    <div className="bg-white rounded-lg shadow m-1 sm:m-2 border">
+      <div className="p-4 sm:p-6">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <div className="px-2 sm:px-3 py-1 bg-gray-100 rounded-full text-xs sm:text-sm">
               {formatDateTime(reading.timestamp)}
             </div>
-            <div className={`px-3 py-1 rounded-full text-sm font-medium ${getFrequencyStatus(reading.measurements.frequency)} bg-gray-100`}>
+            <div className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${getFrequencyStatus(reading.measurements.frequency)} bg-gray-100`}>
               {formatValue(reading.measurements.frequency)} Hz
             </div>
           </div>
-          <div className="text-sm text-gray-500">#{index + 1}</div>
+          <div className="text-xs sm:text-sm text-gray-500">#{index + 1}</div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {/* Voltage Phasors */}
           <div>
-            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-              <Zap className="w-5 h-5 text-yellow-500" />
+            <h3 className="text-md sm:text-lg font-semibold mb-2 sm:mb-3 flex items-center gap-2">
+              <Zap className="w-4 sm:w-5 h-4 sm:h-5 text-yellow-500" />
               Voltage Phasors
             </h3>
-            <div className="space-y-2">
+            <div className="space-y-1 sm:space-y-2">
               {reading.measurements.voltage_phasors.map((phasor, phasorIndex) => (
-                <div key={phasorIndex} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="px-2 py-1 bg-yellow-500 text-white text-xs rounded">{phasor.channel}</div>
-                    <span className="font-medium">{formatValue(phasor.magnitude)} V</span>
+                <div key={phasorIndex} className="flex items-center justify-between p-2 sm:p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="px-1 sm:px-2 py-1 bg-yellow-500 text-white text-xs rounded">{phasor.channel}</div>
+                    <span className="font-medium text-sm sm:text-base">{formatValue(phasor.magnitude)} V</span>
                   </div>
-                  <div className="text-sm text-gray-600">
+                  <div className="text-xs sm:text-sm text-gray-600">
                     ∠ {formatValue(phasor.angle)}°
                   </div>
                 </div>
@@ -352,18 +360,18 @@ const DataPage = () => {
 
           {/* Current Phasors */}
           <div>
-            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-              <Activity className="w-5 h-5 text-blue-500" />
+            <h3 className="text-md sm:text-lg font-semibold mb-2 sm:mb-3 flex items-center gap-2">
+              <Activity className="w-4 sm:w-5 h-4 sm:h-5 text-blue-500" />
               Current Phasors
             </h3>
-            <div className="space-y-2">
+            <div className="space-y-1 sm:space-y-2">
               {reading.measurements.current_phasors.map((phasor, phasorIndex) => (
-                <div key={phasorIndex} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="px-2 py-1 bg-blue-500 text-white text-xs rounded">{phasor.channel}</div>
-                    <span className="font-medium">{formatValue(phasor.magnitude)} A</span>
+                <div key={phasorIndex} className="flex items-center justify-between p-2 sm:p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="px-1 sm:px-2 py-1 bg-blue-500 text-white text-xs rounded">{phasor.channel}</div>
+                    <span className="font-medium text-sm sm:text-base">{formatValue(phasor.magnitude)} A</span>
                   </div>
-                  <div className="text-sm text-gray-600">
+                  <div className="text-xs sm:text-sm text-gray-600">
                     ∠ {formatValue(phasor.angle)}°
                   </div>
                 </div>
@@ -379,8 +387,8 @@ const DataPage = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <Loader className="animate-spin w-10 h-10 text-blue-500 mx-auto mb-4" />
-          <p className="text-gray-600">Loading sensor data...</p>
+          <Loader className="animate-spin w-8 sm:w-10 h-8 sm:h-10 text-blue-500 mx-auto mb-3 sm:mb-4" />
+          <p className="text-sm sm:text-base text-gray-600">Loading sensor data...</p>
         </div>
       </div>
     );
@@ -408,38 +416,38 @@ const DataPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
         <div className="max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <button className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow hover:shadow-md transition-shadow">
-              <ArrowLeft className="h-5 w-5" />
-              Back to Device
+          {/* Responsive Header */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4 sm:mb-6">
+            <button className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-white rounded-lg shadow hover:shadow-md transition-shadow text-sm sm:text-base">
+              <ArrowLeft className="h-4 sm:h-5 w-4 sm:w-5" />
+              Back
             </button>
             <div className="text-right">
-              <h1 className="text-3xl font-bold text-gray-900">Sensor Data Dashboard</h1>
+              <h1 className="text-xl sm:text-3xl font-bold text-gray-900">Sensor Data Dashboard</h1>
               {deviceInfo && (
-                <p className="text-lg text-gray-600">
+                <p className="text-sm sm:text-lg text-gray-600">
                   {deviceInfo.device_name} • {deviceInfo.substation}
                 </p>
               )}
             </div>
           </div>
 
-          {/* Time Range Filter */}
-          <div className="bg-white p-4 rounded-lg shadow mb-6">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <Filter className="w-5 h-5 text-blue-500" />
+          {/* Time Range Filter - Mobile Optimized */}
+          <div className="bg-white p-3 sm:p-4 rounded-lg shadow mb-4 sm:mb-6">
+            <h3 className="text-md sm:text-lg font-semibold mb-3 flex items-center gap-2">
+              <Filter className="w-4 sm:w-5 h-4 sm:h-5 text-blue-500" />
               Time Range Filter
             </h3>
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-2 sm:gap-4">
+              <div className="flex flex-wrap gap-2">
                 {[
-                  { value: '1h', label: '1 Hour' },
-                  { value: '6h', label: '6 Hours' },
-                  { value: '1d', label: '1 Day' },
-                  { value: '1w', label: '1 Week' },
-                  { value: '1m', label: '1 Month' },
+                  { value: '1h', label: '1H' },
+                  { value: '6h', label: '6H' },
+                  { value: '1d', label: '1D' },
+                  { value: '1w', label: '1W' },
+                  { value: '1m', label: '1M' },
                   { value: 'custom', label: 'Custom' }
                 ].map(range => (
                   <button
@@ -448,7 +456,7 @@ const DataPage = () => {
                       setTimeRange(range.value);
                       setCurrentPage(1);
                     }}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    className={`px-2 sm:px-3 py-1 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
                       timeRange === range.value
                         ? 'bg-blue-500 text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -460,24 +468,24 @@ const DataPage = () => {
               </div>
               
               {timeRange === 'custom' && (
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
                   <input
                     type="datetime-local"
                     value={customStartDate}
                     onChange={(e) => setCustomStartDate(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                    className="px-2 sm:px-3 py-1 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm w-full sm:w-auto"
                   />
-                  <span className="text-gray-500">to</span>
+                  <span className="text-gray-500 text-sm hidden sm:inline">to</span>
                   <input
                     type="datetime-local"
                     value={customEndDate}
                     onChange={(e) => setCustomEndDate(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                    className="px-2 sm:px-3 py-1 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm w-full sm:w-auto"
                   />
                 </div>
               )}
               
-              <div className="text-sm text-gray-600">
+              <div className="text-xs sm:text-sm text-gray-600">
                 Showing {filteredSensorData.length} of {sensorData.length} records
               </div>
             </div>
@@ -485,45 +493,45 @@ const DataPage = () => {
 
           {/* Stats Overview */}
           {filteredSensorData.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <div className="bg-white p-6 rounded-lg shadow">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
+              <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Filtered Records</p>
-                    <p className="text-2xl font-bold text-blue-600">{filteredSensorData.length}</p>
+                    <p className="text-xs sm:text-sm text-gray-600">Filtered Records</p>
+                    <p className="text-xl sm:text-2xl font-bold text-blue-600">{filteredSensorData.length}</p>
                   </div>
-                  <Calendar className="w-8 h-8 text-blue-500" />
+                  <Calendar className="w-6 sm:w-8 h-6 sm:h-8 text-blue-500" />
                 </div>
               </div>
-              <div className="bg-white p-6 rounded-lg shadow">
+              <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Latest Frequency</p>
-                    <p className={`text-2xl font-bold ${getFrequencyStatus(stats.latestReading?.measurements.frequency)}`}>
+                    <p className="text-xs sm:text-sm text-gray-600">Latest Frequency</p>
+                    <p className={`text-xl sm:text-2xl font-bold ${getFrequencyStatus(stats.latestReading?.measurements.frequency)}`}>
                       {formatValue(stats.latestReading?.measurements.frequency)} Hz
                     </p>
                   </div>
-                  <Zap className="w-8 h-8 text-green-500" />
+                  <Zap className="w-6 sm:w-8 h-6 sm:h-8 text-green-500" />
                 </div>
               </div>
-              <div className="bg-white p-6 rounded-lg shadow">
+              <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Avg Voltage</p>
-                    <p className="text-2xl font-bold text-yellow-600">{formatValue(stats.avgVoltage)} V</p>
+                    <p className="text-xs sm:text-sm text-gray-600">Avg Voltage</p>
+                    <p className="text-xl sm:text-2xl font-bold text-yellow-600">{formatValue(stats.avgVoltage)} V</p>
                   </div>
-                  <TrendingUp className="w-8 h-8 text-yellow-500" />
+                  <TrendingUp className="w-6 sm:w-8 h-6 sm:h-8 text-yellow-500" />
                 </div>
               </div>
-              <div className="bg-white p-6 rounded-lg shadow">
+              <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Last Updated</p>
-                    <p className="text-sm font-medium text-purple-600">
+                    <p className="text-xs sm:text-sm text-gray-600">Last Updated</p>
+                    <p className="text-xs sm:text-sm font-medium text-purple-600">
                       {stats.latestReading ? formatDateTime(stats.latestReading.timestamp) : 'N/A'}
                     </p>
                   </div>
-                  <Activity className="w-8 h-8 text-purple-500" />
+                  <Activity className="w-6 sm:w-8 h-6 sm:h-8 text-purple-500" />
                 </div>
               </div>
             </div>
@@ -531,17 +539,26 @@ const DataPage = () => {
 
           {/* Zoomable Charts Section */}
           {chartData.length > 0 && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div className="grid grid-cols-1 gap-4 sm:gap-6 mb-4 sm:mb-6">
               {/* Frequency Chart */}
               <ZoomableChart data={chartData} title="Frequency Trend" icon={Zap}>
                 {(data) => (
                   <LineChart data={data}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="timestamp" />
+                    <XAxis 
+                      dataKey="fullTimestamp"
+                      tickFormatter={(timestamp) => formatDateTime(timestamp)}
+                    />
                     <YAxis domain={[49, 51]} />
-                    <Tooltip />
+                    <Tooltip 
+                      labelFormatter={(timestamp) => formatDateTime(timestamp)}
+                    />
                     <Line type="monotone" dataKey="frequency" stroke="#3b82f6" strokeWidth={2} dot={false} />
-                    <Brush dataKey="timestamp" height={30} />
+                    <Brush 
+                      dataKey="fullTimestamp" 
+                      height={30}
+                      tickFormatter={(timestamp) => formatDateTime(timestamp)}
+                    />
                   </LineChart>
                 )}
               </ZoomableChart>
@@ -551,14 +568,23 @@ const DataPage = () => {
                 {(data) => (
                   <LineChart data={data}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="timestamp" />
+                    <XAxis 
+                      dataKey="fullTimestamp"
+                      tickFormatter={(timestamp) => formatDateTime(timestamp)}
+                    />
                     <YAxis />
-                    <Tooltip />
+                    <Tooltip 
+                      labelFormatter={(timestamp) => formatDateTime(timestamp)}
+                    />
                     <Legend />
                     <Line type="monotone" dataKey="va_voltage" stroke="#ef4444" strokeWidth={2} dot={false} name="VA" />
                     <Line type="monotone" dataKey="vb_voltage" stroke="#f59e0b" strokeWidth={2} dot={false} name="VB" />
                     <Line type="monotone" dataKey="vc_voltage" stroke="#10b981" strokeWidth={2} dot={false} name="VC" />
-                    <Brush dataKey="timestamp" height={30} />
+                    <Brush 
+                      dataKey="fullTimestamp" 
+                      height={30}
+                      tickFormatter={(timestamp) => formatDateTime(timestamp)}
+                    />
                   </LineChart>
                 )}
               </ZoomableChart>
@@ -569,14 +595,23 @@ const DataPage = () => {
                   {(data) => (
                     <AreaChart data={data}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="timestamp" />
+                      <XAxis 
+                        dataKey="fullTimestamp"
+                        tickFormatter={(timestamp) => formatDateTime(timestamp)}
+                      />
                       <YAxis />
-                      <Tooltip />
+                      <Tooltip 
+                        labelFormatter={(timestamp) => formatDateTime(timestamp)}
+                      />
                       <Legend />
                       <Area type="monotone" dataKey="ia_current" stackId="1" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.6} name="IA" />
                       <Area type="monotone" dataKey="ib_current" stackId="1" stroke="#06b6d4" fill="#06b6d4" fillOpacity={0.6} name="IB" />
                       <Area type="monotone" dataKey="ic_current" stackId="1" stroke="#84cc16" fill="#84cc16" fillOpacity={0.6} name="IC" />
-                      <Brush dataKey="timestamp" height={30} />
+                      <Brush 
+                        dataKey="fullTimestamp" 
+                        height={30}
+                        tickFormatter={(timestamp) => formatDateTime(timestamp)}
+                      />
                     </AreaChart>
                   )}
                 </ZoomableChart>
@@ -585,16 +620,16 @@ const DataPage = () => {
           )}
 
           {/* Toggle Raw Data View */}
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
             <button
               onClick={() => setShowRawData(!showRawData)}
-              className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow hover:shadow-md transition-shadow"
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-white rounded-lg shadow hover:shadow-md transition-shadow text-sm sm:text-base"
             >
               <Filter className="w-4 h-4" />
               {showRawData ? 'Hide Raw Data' : 'Show Raw Data'}
             </button>
             {showRawData && (
-              <div className="text-sm text-gray-600">
+              <div className="text-xs sm:text-sm text-gray-600">
                 Virtual scrolling enabled for {filteredSensorData.length} records
               </div>
             )}
@@ -604,23 +639,23 @@ const DataPage = () => {
           {showRawData && (
             <>
               {filteredSensorData.length === 0 ? (
-                <div className="bg-white p-8 rounded-lg shadow text-center">
-                  <h2 className="text-xl font-semibold mb-2">No Sensor Data Found</h2>
-                  <p className="text-gray-600">
+                <div className="bg-white p-6 rounded-lg shadow text-center">
+                  <h2 className="text-lg sm:text-xl font-semibold mb-2">No Sensor Data Found</h2>
+                  <p className="text-sm sm:text-base text-gray-600">
                     No sensor data available for the selected time range.
                   </p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="bg-white p-4 rounded-lg shadow">
-                    <h3 className="text-lg font-semibold mb-2">Raw Data (Virtual Scrolling)</h3>
-                    <p className="text-sm text-gray-600 mb-4">
+                  <div className="bg-white p-3 sm:p-4 rounded-lg shadow">
+                    <h3 className="text-md sm:text-lg font-semibold mb-2">Raw Data (Virtual Scrolling)</h3>
+                    <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4">
                       Performance optimized for large datasets. Only visible items are rendered.
                     </p>
                     <VirtualList
                       items={filteredSensorData.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))}
                       itemHeight={280}
-                      containerHeight={600}
+                      containerHeight={500}
                       renderItem={renderVirtualItem}
                     />
                   </div>
