@@ -184,7 +184,6 @@ const NoteDetailPage = () => {
                     className="input input-bordered"
                     value={note.location.longitude}
                     readOnly
-                    disabled
                   />
                 </div>
 
@@ -197,7 +196,6 @@ const NoteDetailPage = () => {
                     className="input input-bordered"
                     value={note.location.latitude}
                     readOnly
-                    disabled
                   />
                 </div>
               </div>
