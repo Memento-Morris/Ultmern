@@ -128,18 +128,18 @@ const NoteDetailPage = () => {
 
   return (
     <div className="min-h-screen bg-base-200">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto">
-          <div className="flex items-center justify-between mb-6">
-            <Link to="/" className="btn btn-ghost">
+      <div className="container mx-auto px-2 sm:px-4 py-6 sm:py-8">
+        <div className="w-full max-w-2xl mx-auto">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <Link to="/" className="btn btn-ghost w-fit">
               <ArrowLeftIcon className="h-5 w-5" />
               Back to Devices
             </Link>
-            <div className="flex gap-2">
-              <button onClick={handleViewData} className="btn btn-info btn-outline">
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <button onClick={handleViewData} className="btn btn-info btn-outline w-full sm:w-auto">
                 View Data
               </button>
-              <button onClick={handleDelete} className="btn btn-error btn-outline">
+              <button onClick={handleDelete} className="btn btn-error btn-outline w-full sm:w-auto">
                 <Trash2Icon className="h-5 w-5" />
                 Delete Device
               </button>
@@ -174,7 +174,7 @@ const NoteDetailPage = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 <div className="form-control">
                   <label className="label">
                     <span className="label-text">Longitude</span>
@@ -202,8 +202,8 @@ const NoteDetailPage = () => {
                 </div>
               </div>
 
-              <div className="card-actions justify-end">
-                <button className="btn btn-primary" disabled={saving} onClick={handleSave}>
+              <div className="card-actions flex-col sm:flex-row gap-2 justify-end items-stretch sm:items-center">
+                <button className="btn btn-primary w-full sm:w-auto" disabled={saving} onClick={handleSave}>
                   {saving ? "Saving..." : "Save Changes"}
                 </button>
               </div>
@@ -213,7 +213,7 @@ const NoteDetailPage = () => {
           {/* Weather Card */}
           <div className="card bg-base-100">
             <div className="card-body">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
                 <h2 className="card-title">
                   <CloudIcon className="h-5 w-5" />
                   Weather Information
@@ -238,7 +238,7 @@ const NoteDetailPage = () => {
 
               {/* Tab Navigation */}
               {(weather || forecast) && (
-                <div className="tabs tabs-bordered mb-4">
+                <div className="tabs tabs-bordered mb-4 flex flex-col sm:flex-row">
                   <button 
                     className={`tab ${activeTab === 'current' ? 'tab-active' : ''}`}
                     onClick={() => setActiveTab('current')}
@@ -258,7 +258,7 @@ const NoteDetailPage = () => {
 
               {/* Current Weather Display */}
               {activeTab === 'current' && weather && (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="flex items-center gap-2">
                     <ThermometerIcon className="h-5 w-5 text-red-500" />
                     <div>
@@ -303,7 +303,7 @@ const NoteDetailPage = () => {
                   <div className="grid gap-4">
                     {forecast.forecasts.map((day, index) => (
                       <div key={index} className="border rounded-lg p-4 bg-base-50">
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 gap-2">
                           <div className="flex items-center gap-2">
                             <CalendarIcon className="h-4 w-4 text-gray-500" />
                             <span className="font-medium">{day.dayOfWeek}</span>
@@ -312,7 +312,7 @@ const NoteDetailPage = () => {
                           <span className="text-sm font-medium capitalize">{day.description}</span>
                         </div>
                         
-                        <div className="grid grid-cols-4 gap-4 text-sm">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
                           <div className="flex items-center gap-1">
                             <ThermometerIcon className="h-4 w-4 text-red-500" />
                             <span>{day.temperature.min}°/{day.temperature.max}°C</span>
