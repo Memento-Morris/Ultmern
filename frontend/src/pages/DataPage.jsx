@@ -14,6 +14,7 @@ const DataPage = () => {
   const [itemsPerPage] = useState(20);
   const [selectedMetric, setSelectedMetric] = useState('frequency');
   const [showRawData, setShowRawData] = useState(false);
+  const [splitPhasors, setSplitPhasors] = useState(false);
   
   // Time range filtering states
   const [timeRange, setTimeRange] = useState('1w'); // '1h', '6h', '1d', '1w', '1m', 'custom'
@@ -130,8 +131,9 @@ const DataPage = () => {
   const formatTooltip = (value, name, props) => {
     if (props && props.payload && props.payload.fullTimestamp) {
       const date = new Date(props.payload.fullTimestamp);
+      const unit = name === 'frequency' ? 'Hz' : name.includes('voltage') ? 'V' : 'A';
       return [
-        `${value} ${name === 'frequency' ? 'Hz' : name.includes('voltage') ? 'V' : 'A'}`,
+        `${typeof value === 'number' ? value.toFixed(2) : value} ${unit}`,
         `${name} at ${date.toLocaleString('en-US', {
           weekday: 'short',
           month: 'short',
@@ -142,7 +144,7 @@ const DataPage = () => {
         })}`
       ];
     }
-    return [value, name];
+    return [typeof value === 'number' ? value.toFixed(2) : value, name];
   };
 
   // Prepare chart data with enhanced timestamp formatting
@@ -372,14 +374,14 @@ const DataPage = () => {
 
           {/* Charts Section */}
           {chartData.length > 0 && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div className="space-y-6 mb-6">
               {/* Frequency Chart */}
               <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                   <Zap className="w-5 h-5 text-blue-500" />
                   Frequency Trend
                 </h3>
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={400}>
                   <LineChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis 
@@ -399,56 +401,208 @@ const DataPage = () => {
 
               {/* Voltage Chart */}
               <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-yellow-500" />
-                  Voltage Phasors
-                </h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
-                      dataKey="timestamp" 
-                      angle={-45}
-                      textAnchor="end"
-                      height={80}
-                      interval="preserveStartEnd"
-                    />
-                    <YAxis />
-                    <Tooltip formatter={formatTooltip} />
-                    <Legend />
-                    <Line type="monotone" dataKey="va_voltage" stroke="#ef4444" strokeWidth={2} dot={false} name="VA" />
-                    <Line type="monotone" dataKey="vb_voltage" stroke="#f59e0b" strokeWidth={2} dot={false} name="VB" />
-                    <Line type="monotone" dataKey="vc_voltage" stroke="#10b981" strokeWidth={2} dot={false} name="VC" />
-                    <Brush dataKey="timestamp" height={30} />
-                  </LineChart>
-                </ResponsiveContainer>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-yellow-500" />
+                    Voltage Phasors
+                  </h3>
+                  <button
+                    onClick={() => setSplitPhasors(!splitPhasors)}
+                    className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    {splitPhasors ? 'Combined View' : 'Split View'}
+                  </button>
+                </div>
+                
+                {splitPhasors ? (
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    {/* VA Voltage */}
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <h4 className="font-semibold mb-2 text-red-600">Phase VA</h4>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <LineChart data={chartData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis 
+                            dataKey="timestamp" 
+                            angle={-45}
+                            textAnchor="end"
+                            height={80}
+                            interval="preserveStartEnd"
+                          />
+                          <YAxis />
+                          <Tooltip formatter={formatTooltip} />
+                          <Line type="monotone" dataKey="va_voltage" stroke="#ef4444" strokeWidth={2} dot={false} name="VA" />
+                          <Brush dataKey="timestamp" height={30} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                    
+                    {/* VB Voltage */}
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <h4 className="font-semibold mb-2 text-yellow-600">Phase VB</h4>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <LineChart data={chartData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis 
+                            dataKey="timestamp" 
+                            angle={-45}
+                            textAnchor="end"
+                            height={80}
+                            interval="preserveStartEnd"
+                          />
+                          <YAxis />
+                          <Tooltip formatter={formatTooltip} />
+                          <Line type="monotone" dataKey="vb_voltage" stroke="#f59e0b" strokeWidth={2} dot={false} name="VB" />
+                          <Brush dataKey="timestamp" height={30} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                    
+                    {/* VC Voltage */}
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <h4 className="font-semibold mb-2 text-green-600">Phase VC</h4>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <LineChart data={chartData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis 
+                            dataKey="timestamp" 
+                            angle={-45}
+                            textAnchor="end"
+                            height={80}
+                            interval="preserveStartEnd"
+                          />
+                          <YAxis />
+                          <Tooltip formatter={formatTooltip} />
+                          <Line type="monotone" dataKey="vc_voltage" stroke="#10b981" strokeWidth={2} dot={false} name="VC" />
+                          <Brush dataKey="timestamp" height={30} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height={400}>
+                    <LineChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey="timestamp" 
+                        angle={-45}
+                        textAnchor="end"
+                        height={80}
+                        interval="preserveStartEnd"
+                      />
+                      <YAxis />
+                      <Tooltip formatter={formatTooltip} />
+                      <Legend />
+                      <Line type="monotone" dataKey="va_voltage" stroke="#ef4444" strokeWidth={2} dot={false} name="VA" />
+                      <Line type="monotone" dataKey="vb_voltage" stroke="#f59e0b" strokeWidth={2} dot={false} name="VB" />
+                      <Line type="monotone" dataKey="vc_voltage" stroke="#10b981" strokeWidth={2} dot={false} name="VC" />
+                      <Brush dataKey="timestamp" height={30} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
               </div>
 
               {/* Current Chart */}
-              <div className="bg-white p-4 sm:p-6 rounded-lg shadow lg:col-span-2">
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-purple-500" />
-                  Current Phasors
-                </h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <AreaChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
-                      dataKey="timestamp" 
-                      angle={-45}
-                      textAnchor="end"
-                      height={80}
-                      interval="preserveStartEnd"
-                    />
-                    <YAxis />
-                    <Tooltip formatter={formatTooltip} />
-                    <Legend />
-                    <Area type="monotone" dataKey="ia_current" stackId="1" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.6} name="IA" />
-                    <Area type="monotone" dataKey="ib_current" stackId="1" stroke="#06b6d4" fill="#06b6d4" fillOpacity={0.6} name="IB" />
-                    <Area type="monotone" dataKey="ic_current" stackId="1" stroke="#84cc16" fill="#84cc16" fillOpacity={0.6} name="IC" />
-                    <Brush dataKey="timestamp" height={30} />
-                  </AreaChart>
-                </ResponsiveContainer>
+              <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-purple-500" />
+                    Current Phasors
+                  </h3>
+                  <button
+                    onClick={() => setSplitPhasors(!splitPhasors)}
+                    className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    {splitPhasors ? 'Combined View' : 'Split View'}
+                  </button>
+                </div>
+                
+                {splitPhasors ? (
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    {/* IA Current */}
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <h4 className="font-semibold mb-2 text-purple-600">Phase IA</h4>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <AreaChart data={chartData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis 
+                            dataKey="timestamp" 
+                            angle={-45}
+                            textAnchor="end"
+                            height={80}
+                            interval="preserveStartEnd"
+                          />
+                          <YAxis />
+                          <Tooltip formatter={formatTooltip} />
+                          <Area type="monotone" dataKey="ia_current" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.6} name="IA" />
+                          <Brush dataKey="timestamp" height={30} />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                    
+                    {/* IB Current */}
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <h4 className="font-semibold mb-2 text-cyan-600">Phase IB</h4>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <AreaChart data={chartData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis 
+                            dataKey="timestamp" 
+                            angle={-45}
+                            textAnchor="end"
+                            height={80}
+                            interval="preserveStartEnd"
+                          />
+                          <YAxis />
+                          <Tooltip formatter={formatTooltip} />
+                          <Area type="monotone" dataKey="ib_current" stroke="#06b6d4" fill="#06b6d4" fillOpacity={0.6} name="IB" />
+                          <Brush dataKey="timestamp" height={30} />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                    
+                    {/* IC Current */}
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <h4 className="font-semibold mb-2 text-lime-600">Phase IC</h4>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <AreaChart data={chartData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis 
+                            dataKey="timestamp" 
+                            angle={-45}
+                            textAnchor="end"
+                            height={80}
+                            interval="preserveStartEnd"
+                          />
+                          <YAxis />
+                          <Tooltip formatter={formatTooltip} />
+                          <Area type="monotone" dataKey="ic_current" stroke="#84cc16" fill="#84cc16" fillOpacity={0.6} name="IC" />
+                          <Brush dataKey="timestamp" height={30} />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height={400}>
+                    <AreaChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey="timestamp" 
+                        angle={-45}
+                        textAnchor="end"
+                        height={80}
+                        interval="preserveStartEnd"
+                      />
+                      <YAxis />
+                      <Tooltip formatter={formatTooltip} />
+                      <Legend />
+                      <Area type="monotone" dataKey="ia_current" stackId="1" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.6} name="IA" />
+                      <Area type="monotone" dataKey="ib_current" stackId="1" stroke="#06b6d4" fill="#06b6d4" fillOpacity={0.6} name="IB" />
+                      <Area type="monotone" dataKey="ic_current" stackId="1" stroke="#84cc16" fill="#84cc16" fillOpacity={0.6} name="IC" />
+                      <Brush dataKey="timestamp" height={30} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                )}
               </div>
             </div>
           )}
